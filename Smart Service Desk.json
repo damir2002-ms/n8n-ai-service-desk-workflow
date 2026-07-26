@@ -1,0 +1,477 @@
+{
+  "name": "Smart Service Desk",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Портал самообслуживания IT",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "ИНН",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Имя",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Текст проблемы",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        0
+      ],
+      "id": "0465dbaf-7a93-4eb1-a35a-71ce98cc4ef0",
+      "name": "On form submission",
+      "webhookId": "dacfd885-0e2e-4cde-b0a9-7dc2185e026b"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "claude-sonnet-4-5-20250929",
+          "mode": "list",
+          "cachedResultName": "claude-sonnet-4-5-20250929"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Ticket ID: {{ $json[\"ticket_id\"] }}\nProblem description: {{ $('On form submission').item.json['Текст проблемы'] }}"
+            }
+          ]
+        },
+        "options": {
+          "system": "You are a Senior IT Service Desk AI Agent with extensive experience in enterprise technical support and incident management.  Your task is to analyze incoming technical support requests and provide a structured classification response.  You must respond ONLY with a valid JSON object containing exactly three keys:  1. \"criticality\": Assess the business impact and urgency. Use ONLY these values:    - \"High\": Critical issues causing business disruption (server crashes, database failures, complete service outages, security breaches, data loss, blocking business operations)    - \"Medium\": Significant issues affecting productivity (application bugs, performance degradation, feature malfunctions, partial service disruptions)    - \"Low\": Minor issues and inquiries (questions, how-to requests, cosmetic bugs, general consultations, access requests for non-urgent work)  2. \"category\": Classify the request type. Examples: \"Инфраструктура\", \"Программное обеспечение\", \"Доступ\", \"Сеть\", \"База данных\", \"Безопасность\", \"Консультация\", \"Оборудование\"  3. \"draft_response\": Compose a professional, empathetic first-line support response in Russian. Include:  - Always include the provided Ticket ID at the very beginning of the response (e.g., \"Ваше обращение [Ticket ID] зарегистрировано и принято в работу.\")  - Acknowledgment of the issue    - Initial assessment or solution if applicable    - Clear next steps or timeline    - Professional and courteous tone  CRITICAL REQUIREMENTS: - Output ONLY valid JSON - no markdown code blocks, no ```json``` wrapper, no explanations before or after - Start directly with { and end with } - Ensure proper JSON escaping for all strings - Use Russian language for draft_response content - Be concise but professional"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "d64861df-7884-4a1a-8878-91ff62d77687",
+      "name": "Message a model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "5XsksNt95FLbs7yr",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.content[0].text;\n\nconst cleaned = raw\n  .replace(/^```(?:json)?\\s*/i, '')\n  .replace(/\\s*```$/, '')\n  .trim();\n\nconst parsed = JSON.parse(cleaned);\n\nreturn {\n  json: {\n    criticality: parsed.criticality,\n    category: parsed.category,\n    draft_response: parsed.draft_response,\n  },\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        0
+      ],
+      "id": "47d689ed-6e0f-4aa6-8df4-7e9006a5865b",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.criticality }}",
+                    "rightValue": "=High",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "d4f97e7d-5343-4d16-9f03-bafc36c8d642"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "fdb283c3-cb16-4a5b-833b-5882e5dc3e3e",
+                    "leftValue": "={{ $json.criticality }}",
+                    "rightValue": "High",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        976,
+        0
+      ],
+      "id": "eeb46af4-7975-4c92-8df6-f9922272ba7b",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "chatId": "-5539240844",
+        "text": "=🚨 *КРИТИЧЕСКИЙ ИНЦИДЕНТ (HIGH)* 🚨\n\n*Ticket ID:* {{ $('Edit Fields').item.json.ticket_id }}\n\n*Клиент:* {{ $('On form submission').item.json['Имя'] }} (ИНН: {{ $('On form submission').item.json['ИНН'] }})\n*Категория:* {{ $json[\"category\"] }}\n\n*Описание проблемы:*\n{{ $('On form submission').item.json['Текст проблемы'] }}\n\n*Предложенный ИИ черновик ответа:*\n_{{ $json[\"draft_response\"] }}_",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1168,
+        -208
+      ],
+      "id": "5577676c-96af-417d-be87-faf507e77f68",
+      "name": "Send a text message",
+      "webhookId": "26f184b4-8aea-466f-a8d0-06589952643f",
+      "credentials": {
+        "telegramApi": {
+          "id": "iMKmKUp2jbyCtaw5",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "vineshowxxx@gmail.com",
+        "toEmail": "={{ $('On form submission').item.json.Email }}",
+        "subject": "=Статус обращения: {{ $json.category }}",
+        "html": "={{ $json.draft_response }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1168,
+        176
+      ],
+      "id": "27841819-77ad-4668-8e39-086b043b70c9",
+      "name": "Send an Email",
+      "webhookId": "1cc7dada-0184-40f8-9650-78cc2ea6aed8",
+      "credentials": {
+        "smtp": {
+          "id": "ufFlvZxTbReXWI69",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1OWcsfJlPX71oTKbuFTM7TEMFLS2iahA4FfkyyHhYhf0",
+          "mode": "list",
+          "cachedResultName": "Smart Service Desk - Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1OWcsfJlPX71oTKbuFTM7TEMFLS2iahA4FfkyyHhYhf0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Лист1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1OWcsfJlPX71oTKbuFTM7TEMFLS2iahA4FfkyyHhYhf0/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Дата": "={{ $now.format('DD.MM.YYYY HH:mm') }}",
+            "ИНН": "={{ $('On form submission').item.json[\"ИНН\"] }}",
+            "Email": "={{ $('On form submission').item.json[\"Email\"] }}",
+            "Категория": "={{ $('Code in JavaScript').item.json.category }}",
+            "Черновик ответа": "={{ $('Code in JavaScript').item.json.draft_response }}",
+            "Имя": "={{ $('On form submission').item.json[\"Имя\"] }}",
+            "Описание проблемы": "={{ $('On form submission').item.json[\"Текст проблемы\"] }}",
+            "Критичность": "={{ $('Code in JavaScript').item.json.criticality }}",
+            "Ticket ID": "={{ $('Edit Fields').item.json.ticket_id }}",
+            "Статус": "Сделать"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Дата",
+              "displayName": "Дата",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ИНН",
+              "displayName": "ИНН",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Имя",
+              "displayName": "Имя",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Критичность",
+              "displayName": "Критичность",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Категория",
+              "displayName": "Категория",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Описание проблемы",
+              "displayName": "Описание проблемы",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Черновик ответа",
+              "displayName": "Черновик ответа",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Ticket ID",
+              "displayName": "Ticket ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Статус",
+              "displayName": "Статус",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1392,
+        0
+      ],
+      "id": "77757785-62ab-4bc8-b819-8e53ca14ec63",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleApi": {
+          "id": "xiHCWttUvgC3NAYR",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d1aacb75-21fc-4b5c-b3cd-17c69d021fe3",
+              "name": "=ticket_id",
+              "value": "=INC-{{ Math.floor(1000 + Math.random() * 9000) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "3cd8f8be-832b-4535-affe-bdd65b146443",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an Email": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "dP1AHgUHY1avsy8c",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "8c7c27e2-91ef-4c12-987c-373be358361e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4d2fabf3b9e28dce2777043fdf58a56ea25e138cdc79f68dd6983b6117323221"
+  },
+  "nodeGroups": [],
+  "id": "GA08HEbmQ65bArf1",
+  "tags": []
+}

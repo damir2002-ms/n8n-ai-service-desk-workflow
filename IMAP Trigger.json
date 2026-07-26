@@ -1,0 +1,330 @@
+{
+  "name": "IMAP Trigger",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "customEmailConfig": "[\"UNSEEN\"]"
+        }
+      },
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "9fc5c35d-1ec0-40d3-a05f-3888e40545fa",
+      "name": "Email Trigger (IMAP)",
+      "credentials": {
+        "imap": {
+          "id": "wGMIyqoQznArSMCt",
+          "name": "IMAP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "claude-sonnet-4-5-20250929",
+          "mode": "list",
+          "cachedResultName": "claude-sonnet-4-5-20250929"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Subject: {{ $json[\"subject\"] }}\nBody: {{ $json[\"textHtml\"] }}"
+            }
+          ]
+        },
+        "options": {
+          "system": "You are an AI IT Service Desk assistant. Analyze the incoming reply email from a user. Your task is to extract two things and output ONLY a valid JSON object: 1. \"ticket_id\": Extract the ticket ID (format INC-XXXX) found in the email subject or body. If none found, return null. 2. \"intent\": Determine the user's intent. Use ONLY these exact Russian values: - \"Решено\": The user says thanks, confirms the issue is fixed, or closes the discussion. - \"Требуется доработка\": The user states the problem persists, is angry, or needs further help.  CRITICAL REQUIREMENTS: - Output ONLY valid JSON - no markdown code blocks, no ```json``` wrapper. - Start directly with { and end with } - JSON keys must be \"ticket_id\" and \"intent\"."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "ee050d51-5922-4307-97ab-df688605c5be",
+      "name": "Message a model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "5XsksNt95FLbs7yr",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d729c74c-b531-4d27-bb8a-9cfb20c1b121",
+              "leftValue": "={{ $json[\"subject\"] }}",
+              "rightValue": "INC-",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "2baf3e16-dbdf-4b0f-8b1e-43569916d408",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Получаем текст ответа от предыдущей ноды Anthropic\nconst rawText = $input.item.json.content[0].text;\n\n// Очищаем текст от маркдаун-оберток ```json и ```\nconst cleanedText = rawText.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n\n// Превращаем текст в полноценный JSON-объект и возвращаем наружу\nreturn {\n  json: JSON.parse(cleanedText)\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        0
+      ],
+      "id": "858f4586-ed59-491f-93ef-755f2c76d136",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1OWcsfJlPX71oTKbuFTM7TEMFLS2iahA4FfkyyHhYhf0",
+          "mode": "list",
+          "cachedResultName": "Smart Service Desk - Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1OWcsfJlPX71oTKbuFTM7TEMFLS2iahA4FfkyyHhYhf0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Лист1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1OWcsfJlPX71oTKbuFTM7TEMFLS2iahA4FfkyyHhYhf0/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Статус": "={{ $json.intent }}",
+            "Ticket ID": "={{ $json.ticket_id }}"
+          },
+          "matchingColumns": [
+            "Ticket ID"
+          ],
+          "schema": [
+            {
+              "id": "Дата",
+              "displayName": "Дата",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "ИНН",
+              "displayName": "ИНН",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Имя",
+              "displayName": "Имя",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Критичность",
+              "displayName": "Критичность",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Категория",
+              "displayName": "Категория",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Описание проблемы",
+              "displayName": "Описание проблемы",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Черновик ответа",
+              "displayName": "Черновик ответа",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Ticket ID",
+              "displayName": "Ticket ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Статус",
+              "displayName": "Статус",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1024,
+        0
+      ],
+      "id": "8142e245-4bb1-4675-801e-7e3b6bbe6e36",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleApi": {
+          "id": "xiHCWttUvgC3NAYR",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Email Trigger (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "dP1AHgUHY1avsy8c",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "f21bb55e-c839-478b-b086-897e4b8c2cfd",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4d2fabf3b9e28dce2777043fdf58a56ea25e138cdc79f68dd6983b6117323221"
+  },
+  "nodeGroups": [],
+  "id": "UhtlndWs4R5jqnmV",
+  "tags": []
+}

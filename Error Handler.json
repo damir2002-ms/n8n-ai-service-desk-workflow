@@ -1,0 +1,65 @@
+{
+  "name": "Error Handler",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "894f33d3-c3ce-44cd-800e-62c0283840d3",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "chatId": "-5539240844",
+        "text": "=⚠️ Сбой в Workflow: {{ $json.workflow.name }}!\n❌ Ошибка в ноде: {{ $json.execution.lastNodeExecuted }}\n💬 Текст ошибки: {{ $json.execution.error.message }}\n🔗 Ссылка на лог: {{ $json.execution.url }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        176,
+        0
+      ],
+      "id": "64f37be7-ce76-49fe-b14f-030f75dd214e",
+      "name": "Send a text message",
+      "webhookId": "26f184b4-8aea-466f-a8d0-06589952643f",
+      "credentials": {
+        "telegramApi": {
+          "id": "iMKmKUp2jbyCtaw5",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "0faa2aa3-41a9-4ef5-8b5c-fbc19e1e1468",
+  "meta": {
+    "instanceId": "4d2fabf3b9e28dce2777043fdf58a56ea25e138cdc79f68dd6983b6117323221"
+  },
+  "nodeGroups": [],
+  "id": "dP1AHgUHY1avsy8c",
+  "tags": []
+}
