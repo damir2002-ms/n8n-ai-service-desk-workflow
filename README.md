@@ -45,7 +45,7 @@
 
 ## 🚀 Ключевые технологии и интеграции
 * **Оркестрация:** n8n (Docker / Self-hosted Linux VPS + SSL/HTTPS)
-* **ИИ / LLM:** Anthropic Claude 3.5 Sonnet API (Промпт-инжиниринг, JSON-mode, Intent Recognition)
+* **ИИ / LLM:** Anthropic Claude 4.5 Sonnet API (Промпт-инжиниринг, JSON-mode, Intent Recognition)
 * **Интеграции:** REST API, Webhooks, IMAP, Telegram Bot API, Google Sheets API (Upsert)
 * **Код и парсинг:** JavaScript (ES6+), JSON, регулярные выражения (RegEx)
 
